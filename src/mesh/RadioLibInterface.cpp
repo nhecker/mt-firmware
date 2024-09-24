@@ -10,6 +10,7 @@
 #include "mesh-pb-constants.h"
 #include <pb_decode.h>
 #include <pb_encode.h>
+#include <Led.h>
 
 void LockingArduinoHal::spiBeginTransaction()
 {
@@ -386,6 +387,7 @@ void RadioLibInterface::handleReceiveInterrupt()
             // Note: we deliver _all_ packets to our router (i.e. our interface is intentionally promiscuous).
             // This allows the router and other apps on our node to sniff packets (usually routing) between other
             // nodes.
+            ledForceOn.set(true);
             meshtastic_MeshPacket *mp = packetPool.allocZeroed();
 
             mp->from = h->from;
@@ -411,6 +413,7 @@ void RadioLibInterface::handleReceiveInterrupt()
             airTime->logAirtime(RX_LOG, xmitMsec);
 
             deliverToReceiver(mp);
+            ledForceOn.set(false);
         }
     }
 }
@@ -441,6 +444,7 @@ void RadioLibInterface::startSend(meshtastic_MeshPacket *txp)
         LOG_WARN("startSend is dropping tx packet because we are disabled\n");
         packetPool.release(txp);
     } else {
+        ledForceOn.set(true);
         configHardwareForSend(); // must be after setStandby
 
         size_t numbytes = beginSending(txp);
@@ -459,5 +463,6 @@ void RadioLibInterface::startSend(meshtastic_MeshPacket *txp)
         // Must be done AFTER, starting transmit, because startTransmit clears (possibly stale) interrupt pending register
         // bits
         enableInterrupt(isrTxLevel0);
+        ledForceOn.set(false);
     }
 }
